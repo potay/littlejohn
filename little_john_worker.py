@@ -229,7 +229,6 @@ class LittleJohnWorker(object):
             bid_price: (float) Bid price of order.
             quantity: (int) Quantity of stocks of order.
 
-
         Returns:
             (dict) Order data.
         """
@@ -243,7 +242,6 @@ class LittleJohnWorker(object):
             symbol: (string) Instrument symbol.
             bid_price: (float) Bid price of order.
             quantity: (int) Quantity of stocks of order.
-
 
         Returns:
             (dict) Order data.
