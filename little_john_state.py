@@ -7,7 +7,7 @@ class LittleJohnStateError(Exception):
 
 
 class LittleJohnDecision(object):
-    """Little John Decision class
+    """Little John Decision Class
 
     Attributes:
         type: (LittleJohnDecision.STAND) The type of decision.
