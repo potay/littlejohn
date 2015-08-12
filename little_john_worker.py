@@ -251,6 +251,12 @@ class LittleJohnWorker(object):
         transaction = "sell"
         return self._PlaceOrder(transaction, symbol, bid_price, quantity)
 
+    def UpdateState(self, state):
+        pass
+
+    def PerformDecision(self, decision):
+        pass
+
 
 def main():
     import getpass

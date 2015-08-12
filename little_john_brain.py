@@ -13,3 +13,6 @@ class LittleJohnBrain(object):
 
     def __init__(self):
         pass
+
+    def UpdateDecision(self, state):
+        pass

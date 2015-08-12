@@ -40,12 +40,15 @@ class LittleJohn(object):
         return LittleJohn(worker, brain)
 
     def _UpdateState(self):
+        LOGGER.info("Updating State.")
         self.worker.UpdateState(self.state)
 
     def _UpdateDecision(self):
+        LOGGER.info("Updating Decision.")
         self.brain.UpdateDecision(self.state)
 
     def _PerformDecision(self):
+        LOGGER.info("Performing Decision.")
         self.worker.PerformDecision(self.state.GetDecision())
 
     def _LoopWorker(self):
