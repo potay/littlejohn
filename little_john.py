@@ -1,4 +1,9 @@
+import logging
 import requests
+import urllib
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class LittleJohnError(Exception):
@@ -48,7 +53,8 @@ class LittleJohn(object):
         self.username = None
         self.password = None
         self.auth_token = None
-        self.account_numbers = []
+        self.accounts = {}
+        self._default_account = None
 
     def Start(self, username, password):
         """Start LittleJohn with RobinHood username and password.
@@ -80,12 +86,24 @@ class LittleJohn(object):
 
     def _InitAccount(self):
         """Initialize account details."""
-        # Get all Account Numbers
-        for account in self._GetFromEndpoint("accounts")["results"]:
-            self.account_numbers.append(account["account_number"])
+        # Get all account information
+        accounts = self._GetFromEndpoint("accounts")["results"]
+        self.accounts = {account["account_number"]: account for account in accounts}
+        self._default_account = accounts[0]["account_number"]
+
+    @property
+    def default_account(self):
+        if self._default_account and self._default_account in self.accounts:
+            return self.accounts[self._default_account]
+        else:
+            return None
 
     def _PostToUrl(self, url, data):
-        return self.session.post(url, data=data).json()
+        data = self.session.post(url, data=data).json()
+        if "non_field_errors" in data:
+            LOGGER.error(", ".join(data["non_field_errors"]))
+            return None
+        return data
 
     def _PostToEndpoint(self, endpoint, data):
         if endpoint in LittleJohn._ENDPOINTS:
@@ -93,17 +111,76 @@ class LittleJohn(object):
         else:
             return None
 
-    def _GetFromUrl(self, url):
-        return self.session.get(url).json()
+    def _GetFromUrl(self, url, params=None):
+        data = self.session.get(url, params=params).json()
+        if "non_field_errors" in data:
+            LOGGER.error(", ".join(data["non_field_errors"]))
+            return None
+        return data
 
-    def _GetFromEndpoint(self, endpoint):
+    def _GetFromEndpoint(self, endpoint, params=None):
         if endpoint in LittleJohn._ENDPOINTS:
-            return self._GetFromUrl(LittleJohn._ENDPOINTS[endpoint])
+            return self._GetFromUrl(
+                LittleJohn._ENDPOINTS[endpoint],
+                params=params)
         else:
             return None
 
-    def GetRecommendedPosition(self):
-        pass
+    def GetPositions(self):
+        data = self._GetFromUrl(self.default_account["positions"])
+        return data["results"]
+
+    def QueryInstruments(self, query, exact=True):
+        data = self._GetFromEndpoint(
+            "instruments",
+            params={"query": query.upper()})
+        if exact:
+            instrument = [result for result in data["results"] if result["symbol"] == query.upper()]
+            if len(instrument) == 1:
+                return instrument[0]
+            else:
+                return None
+        else:
+            return data["results"]
+
+    def GetQuotes(self, *symbols):
+        data = self._GetFromEndpoint("quotes", params={"symbols": ",".join(symbols)})
+        return data["results"]
+
+    def _PlaceOrder(self, transaction, symbol, bid_price=None, quantity=1):
+        if bid_price is None:
+            bid_price = self.GetQuotes(symbol)[0]["bid_price"]
+
+        instrument = self.QueryInstruments(symbol, exact=True)
+        if instrument is None:
+            raise LittleJohnError("Symbol is not valid. Symbol: %s" % symbol)
+
+        data = {
+            "account": urllib.unquote(self.default_account["url"]),
+            "instrument": urllib.unquote(instrument["url"]),
+            "price": float(bid_price),
+            "quantity": quantity,
+            "side": transaction,
+            "symbol": symbol,
+            "time_in_force": "gfd",
+            "trigger": "immediate",
+            "type": "market"
+        }
+
+        order_data = self._PostToEndpoint("orders", data=data)
+
+        if order_data is None:
+            raise LittleJohnError("Unable to place order. | Order: %s | Errors: %s" % (data, ", ".join(order_data["non_field_errors"])))
+
+        return order_data
+
+    def PlaceBuyOrder(self, symbol, bid_price=None, quantity=1):
+        transaction = "buy"
+        return self._PlaceOrder(transaction, symbol, bid_price, quantity)
+
+    def PlaceSellOrder(self, symbol, bid_price=None, quantity=1):
+        transaction = "sell"
+        return self._PlaceOrder(transaction, symbol, bid_price, quantity)
 
 
 def main():
@@ -112,6 +189,11 @@ def main():
     username = raw_input("Username: ")
     password = getpass.getpass("Password: ")
     lj.Start(username, password)
+    import pprint
+    pprint.pprint(lj.QueryInstruments("GOOG"))
+    pprint.pprint(lj.GetQuotes("GOOG", "AAPL", "NFLX"))
+    pprint.pprint(lj.GetPositions())
+    pprint.pprint(lj.PlaceBuyOrder("GOOG", 1, 1))
 
 
 if __name__ == "__main__":
