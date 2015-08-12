@@ -2,15 +2,21 @@ from enum import Enum
 import logging
 
 
-LOGGER = logging.getLogger(__name__)
-
-
 class LittleJohnStateError(Exception):
     pass
 
 
 class LittleJohnDecision(object):
-    pass
+    STAND = Enum("LittleJohnDecisionStand",
+                 "stay",
+                 "buy",
+                 "sell")
+
+    def __init__(self):
+        self.stand = LittleJohnDecision.STAND.stay
+        self.symbol = None
+        self.bid_price = None
+        self.quantity = None
 
 
 class LittleJohnState(object):

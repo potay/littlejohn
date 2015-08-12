@@ -7,9 +7,6 @@ import little_john_state
 import little_john_worker
 
 
-LOGGER = logging.getLogger(__name__)
-
-
 class LittleJohnError(Exception):
     pass
 
@@ -40,15 +37,15 @@ class LittleJohn(object):
         return LittleJohn(worker, brain)
 
     def _UpdateState(self):
-        LOGGER.info("Updating State.")
+        logging.info("Updating State.")
         self.worker.UpdateState(self.state)
 
     def _UpdateDecision(self):
-        LOGGER.info("Updating Decision.")
+        logging.info("Updating Decision.")
         self.brain.UpdateDecision(self.state)
 
     def _PerformDecision(self):
-        LOGGER.info("Performing Decision.")
+        logging.info("Performing Decision.")
         self.worker.PerformDecision(self.state.GetDecision())
 
     def _LoopWorker(self):

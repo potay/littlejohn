@@ -3,9 +3,6 @@ import requests
 import urllib
 
 
-LOGGER = logging.getLogger(__name__)
-
-
 class LittleJohnWorkerError(Exception):
     pass
 
@@ -116,7 +113,7 @@ class LittleJohnWorker(object):
     def _PostToUrl(self, url, data):
         data = self.session.post(url, data=data).json()
         if "non_field_errors" in data:
-            LOGGER.error(", ".join(data["non_field_errors"]))
+            logging.error(", ".join(data["non_field_errors"]))
             return None
         return data
 
@@ -129,7 +126,7 @@ class LittleJohnWorker(object):
     def _GetFromUrl(self, url, params=None):
         data = self.session.get(url, params=params).json()
         if "non_field_errors" in data:
-            LOGGER.error(", ".join(data["non_field_errors"]))
+            logging.error(", ".join(data["non_field_errors"]))
             return None
         return data
 
