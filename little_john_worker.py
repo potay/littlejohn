@@ -142,10 +142,20 @@ class LittleJohnWorker(object):
             return None
 
     def GetPositions(self):
+        """Gets All Positions Data from Robinhood API."""
         data = self._GetFromUrl(self.default_account["positions"])
         return data["results"]
 
     def QueryInstruments(self, query, exact=True):
+        """Gets Instruments matching query from Robinhood API.
+
+        Args:
+            query: (string) Query to match. Query should relate to symbol.
+            exact: (bool) If true, query should be a exact symbol match.
+
+        Returns:
+            (dict list) List of instruments data.
+        """
         data = self._GetFromEndpoint(
             "instruments",
             params={"query": query.upper()})
@@ -159,10 +169,32 @@ class LittleJohnWorker(object):
             return data["results"]
 
     def GetQuotes(self, *symbols):
+        """Returns quotes of the symbols.
+
+        Args:
+            *symbols: (string) Symbol of instrument.
+
+        Returns:
+            (dict list) List of quote data of instruments.
+        """
         data = self._GetFromEndpoint("quotes", params={"symbols": ",".join(symbols)})
         return data["results"]
 
     def _PlaceOrder(self, transaction, symbol, bid_price=None, quantity=1):
+        """Places order via the Robinhood API and returns order data.
+
+        Args:
+            transaction: (string) Transaction type. Either "buy" or "sell".
+            symbol: (string) Instrument symbol.
+            bid_price: (float) Bid price of order.
+            quantity: (int) Quantity of stocks of order.
+
+        Returns:
+            (dict) Order data.
+
+        Raises:
+            LittleJohnWorkerError: If unable to place order.
+        """
         if bid_price is None:
             bid_price = self.GetQuotes(symbol)[0]["bid_price"]
 
@@ -190,10 +222,32 @@ class LittleJohnWorker(object):
         return order_data
 
     def PlaceBuyOrder(self, symbol, bid_price=None, quantity=1):
+        """Places a buy order via Robinhood API and returns order data.
+
+        Args:
+            symbol: (string) Instrument symbol.
+            bid_price: (float) Bid price of order.
+            quantity: (int) Quantity of stocks of order.
+
+
+        Returns:
+            (dict) Order data.
+        """
         transaction = "buy"
         return self._PlaceOrder(transaction, symbol, bid_price, quantity)
 
     def PlaceSellOrder(self, symbol, bid_price=None, quantity=1):
+        """Places a sell order via Robinhood API and returns order data.
+
+        Args:
+            symbol: (string) Instrument symbol.
+            bid_price: (float) Bid price of order.
+            quantity: (int) Quantity of stocks of order.
+
+
+        Returns:
+            (dict) Order data.
+        """
         transaction = "sell"
         return self._PlaceOrder(transaction, symbol, bid_price, quantity)
 
