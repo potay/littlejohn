@@ -1,5 +1,10 @@
 from enum import Enum
+import json
+import datetime
 import logging
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 class LittleJohnStateError(Exception):
@@ -10,19 +15,20 @@ class LittleJohnDecision(object):
     """Little John Decision Class
 
     Attributes:
-        type: (LittleJohnDecision.STAND) The type of decision.
+        type: (LittleJohnDecision.TYPE) The type of decision.
         symbol: (string) Symbol of the instrument.
         bid_price: (float) Bid Price of the decision.
         quantity: (int) Quantity of the decision.
     """
 
-    TYPE = Enum("LittleJohnDecisionStand",
+    TYPE = Enum("LittleJohnDecisionStand", [
+                "null",
                 "stay",
                 "buy",
-                "sell")
+                "sell"])
 
     def __init__(self):
-        self._type = LittleJohnDecision.TYPE.stay
+        self._type = LittleJohnDecision.TYPE.null
         self._symbol = None
         self._bid_price = None
         self._quantity = None
@@ -50,7 +56,7 @@ class LittleJohnDecision(object):
 
     def SetActed(self):
         """Sets that decision has been acted on."""
-        logging.info(
+        LOGGER.info(
             "Decision acted on. Details: type: %s, symbol: %s, bid price: %f, quantity: %d",
             self.type, self.symbol, self.bid_price, self.quantity)
         self._acted_on = True
@@ -95,28 +101,56 @@ class LittleJohnDecision(object):
         self._quantity = quantity
 
     def _SetStayDecision(self):
-        self._SetDecision(LittleJohnDecision.STAND.stay)
+        self._SetDecision(LittleJohnDecision.TYPE.stay)
 
     def _SetBuyDecision(self, symbol, bid_price, quantity):
         self._SetDecision(
-            LittleJohnDecision.STAND.buy,
+            LittleJohnDecision.TYPE.buy,
             symbol, bid_price, quantity)
 
     def _SetSellDecision(self, symbol, bid_price, quantity):
         self._SetDecision(
-            LittleJohnDecision.STAND.sell,
+            LittleJohnDecision.TYPE.sell,
             symbol, bid_price, quantity)
+
+
+class LittleJohnInstrument(object):
+    """Little John Instrument"""
+
+    def __init__(self, symbol, url, splits, fundamentals, quote, market, position=None):
+        self.timestamp = datetime.datetime.now()
+        self.symbol = symbol
+        self.url = url
+        self.splits = splits
+        self.fundamentals = fundamentals
+        self.quote = quote
+        self.market = market
+        self.position = position
 
 
 class LittleJohnState(object):
     """Little John State Class"""
 
-    def __init__(self):
-        self.decision
+    def __init__(self, instruments):
+        self._decision = LittleJohnDecision()
+        self.instruments = instruments
 
-    @staticmethod
-    def Create():
-        return LittleJohnState()
+    @property
+    def decision(self):
+        if self._decision.type == "null":
+            LOGGER.warning("Decision has not been made.")
+            return None
+        else:
+            return self._decision
 
-    def GetDecision(self):
-        return None
+    @decision.setter
+    def decision(self, decision):
+        if self._decision.type == "null":
+            self._decision = decision
+        else:
+            LOGGER.error("Decision has already been made.")
+
+    def __str__(self):
+        def date_handler(obj):
+            return obj.isoformat() if hasattr(obj, 'isoformat') else obj
+        return "Decision: %s, Instruments: %s" % (self._decision.__dict__, ", ".join([json.dumps(instrument.__dict__, default=date_handler, sort_keys=True, indent=4, separators=(',', ': ')) for instrument in self.instruments]))

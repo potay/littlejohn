@@ -2,6 +2,11 @@ import logging
 import requests
 import urllib
 
+import little_john_state
+
+
+LOGGER = logging.getLogger(__name__)
+
 
 class LittleJohnWorkerError(Exception):
     pass
@@ -113,7 +118,7 @@ class LittleJohnWorker(object):
     def _PostToUrl(self, url, data):
         data = self.session.post(url, data=data).json()
         if "non_field_errors" in data:
-            logging.error(", ".join(data["non_field_errors"]))
+            LOGGER.error(", ".join(data["non_field_errors"]))
             return None
         return data
 
@@ -126,7 +131,7 @@ class LittleJohnWorker(object):
     def _GetFromUrl(self, url, params=None):
         data = self.session.get(url, params=params).json()
         if "non_field_errors" in data:
-            logging.error(", ".join(data["non_field_errors"]))
+            LOGGER.error(", ".join(data["non_field_errors"]))
             return None
         return data
 
@@ -141,7 +146,10 @@ class LittleJohnWorker(object):
     def GetPositions(self):
         """Gets All Positions Data from Robinhood API."""
         data = self._GetFromUrl(self.default_account["positions"])
-        return data["results"]
+        positions = data["results"]
+        for position in positions:
+            position["instrument"] = self._GetFromUrl(position["instrument"])
+        return positions
 
     def QueryInstruments(self, query, exact=True):
         """Gets Instruments matching query from Robinhood API.
@@ -246,8 +254,19 @@ class LittleJohnWorker(object):
         transaction = "sell"
         return self._PlaceOrder(transaction, symbol, bid_price, quantity)
 
-    def UpdateState(self, state):
-        pass
+    def GetState(self):
+        instruments = []
+        for position in self.GetPositions():
+            symbol = position["instrument"]["symbol"]
+            url = position["instrument"]["url"]
+            splits = self._GetFromUrl(position["instrument"]["splits"])["results"]
+            fundamentals = self._GetFromUrl(position["instrument"]["fundamentals"])
+            quote = self._GetFromUrl(position["instrument"]["quote"])
+            market = self._GetFromUrl(position["instrument"]["market"])
+            instrument = little_john_state.LittleJohnInstrument(symbol, url, splits, fundamentals, quote, market, position)
+            instruments.append(instrument)
+
+        return little_john_state.LittleJohnState(instruments)
 
     def PerformDecision(self, decision):
         pass
