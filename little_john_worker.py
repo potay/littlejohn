@@ -255,6 +255,11 @@ class LittleJohnWorker(object):
         return self._PlaceOrder(transaction, symbol, bid_price, quantity)
 
     def GetState(self):
+        """Generates new state.
+
+        Returns:
+            (little_john_state.LittleJohnState) Generated state.
+        """
         instruments = []
         for position in self.GetPositions():
             symbol = position["instrument"]["symbol"]
@@ -269,6 +274,7 @@ class LittleJohnWorker(object):
         return little_john_state.LittleJohnState(instruments)
 
     def PerformDecision(self, decision):
+        """Acts on the decision."""
         pass
 
 

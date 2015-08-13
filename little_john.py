@@ -1,4 +1,3 @@
-import json
 import logging
 import sys
 import threading
@@ -74,6 +73,7 @@ class LittleJohn(object):
             sys.stdout.flush()
 
     def Loop(self):
+        """Main loop of LittleJohn."""
         loop_worker = threading.Thread(target=self._LoopWorker)
         loop_worker.start()
         raw_input("Running...\nPress 'Enter' to stop.\n")
